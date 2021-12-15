@@ -18,11 +18,9 @@ from pytorchyolo.utils.datasets import ListDataset
 from pytorchyolo.utils.transforms import DEFAULT_TRANSFORMS
 from pytorchyolo.utils.parse_config import parse_data_config
 
-
 def evaluate_model_file(model_path, weights_path, img_path, class_names, batch_size=8, img_size=416,
                         n_cpu=8, iou_thres=0.5, conf_thres=0.5, nms_thres=0.5, verbose=True):
     """Evaluate model on validation dataset.
-
     :param model_path: Path to model definition file (.cfg)
     :type model_path: str
     :param weights_path: Path to weights or checkpoint file (.weights or .pth)
@@ -72,13 +70,14 @@ def print_eval_stats(metrics_output, class_names, verbose):
                 ap_table += [[c, class_names[c], "%.5f" % AP[i]]]
             print(AsciiTable(ap_table).table)
         print(f"---- mAP {AP.mean():.5f} ----")
+        print(f"---- recall {recall.mean():.5f} ----")
+        print(f"---- precision {precision.mean():.5f} ----")
     else:
         print("---- mAP not measured (no detections found by model) ----")
 
 
 def _evaluate(model, dataloader, class_names, img_size, iou_thres, conf_thres, nms_thres, verbose):
     """Evaluate model on validation dataset.
-
     :param model: Model to evaluate
     :type model: models.Darknet
     :param dataloader: Dataloader provides the batches of images with targets
@@ -115,7 +114,7 @@ def _evaluate(model, dataloader, class_names, img_size, iou_thres, conf_thres, n
         with torch.no_grad():
             outputs = model(imgs)
             outputs = non_max_suppression(outputs, conf_thres=conf_thres, iou_thres=nms_thres)
-
+        
         sample_metrics += get_batch_statistics(outputs, targets, iou_threshold=iou_thres)
 
     if len(sample_metrics) == 0:  # No detections over whole validation set.
@@ -136,7 +135,6 @@ def _evaluate(model, dataloader, class_names, img_size, iou_thres, conf_thres, n
 def _create_validation_data_loader(img_path, batch_size, img_size, n_cpu):
     """
     Creates a DataLoader for validation.
-
     :param img_path: Path to file containing all paths to validation images.
     :type img_path: str
     :param batch_size: Size of each image batch
